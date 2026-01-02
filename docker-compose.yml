@@ -1,0 +1,38 @@
+version: '3.8'
+
+# 全局网络（确保后端和数据库互通）
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  # 数据库服务（角色1配置，此处复用）
+  mysql-db:
+    image: mysql:8.0
+    volumes:
+      - ~/docker-task7/volumes/mysql:/var/lib/mysql  # WSL2路径持久化
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=test  # 初始化test数据库
+    healthcheck:  # 健康检查（确保数据库就绪后启动后端）
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+
+  # 后端服务（角色2核心配置）
+  backend:
+    build: ./src/backend  # 基于后端Dockerfile构建
+    ports:
+      - "5000:5000"  # 映射Windows端口5000到WSL2
+    environment:
+      - MYSQL_HOST=mysql-db
+      - MYSQL_PASSWORD=123456
+      - MYSQL_DB=test
+    depends_on:
+      mysql-db:
+        condition: service_healthy  # 数据库健康后才启动后端
+    networks:
+      - app-network
