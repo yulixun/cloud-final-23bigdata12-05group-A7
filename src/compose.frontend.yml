@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
