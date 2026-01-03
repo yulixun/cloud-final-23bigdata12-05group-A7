@@ -1,0 +1,34 @@
+version: '3.8'  # 新版Compose可删除，不影响功能
+
+services:
+  mysql-db:  # 服务名保持不变，便于识别
+    image: mysql:8.0
+    container_name: mysql-task7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: task7_db
+      MYSQL_USER: task7_user
+      MYSQL_PASSWORD: task7_pass
+    ports:
+      - "3307:3306"  # 端口映射不变，Windows可访问
+    volumes:
+      # 1. 修改：my.cnf挂载路径（适配src/db/conf/my.cnf）
+      - ./src/db/conf/my.cnf:/etc/mysql/conf.d/my.cnf
+      # 2. 不变：数据持久化路径（volumes/mysql仍在根目录）
+      - ./volumes/mysql:/var/lib/mysql
+      # 3. 修改：初始化脚本路径（seed.sql→init.sql，移到src/db/init/）
+      - ./src/db/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - task7-network
+
+# 自定义网络（保持不变，隔离数据库容器）
+networks:
+  task7-network:
+    driver: bridge
