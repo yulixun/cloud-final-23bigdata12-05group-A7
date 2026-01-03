@@ -1,18 +1,33 @@
-# 过滤 MySQL 数据目录（核心）
+# MySQL 数据目录（核心，彻底过滤）
 volumes/mysql/
 
-# 过滤 Docker 临时文件
+# MySQL 临时/日志/证书文件（兜底）
+*.sbi
+*.ibt
+*.dblwr
+*.tmp
+ib_*
+binlog.*
+#innodb_redo/
+#innodb_temp/
+*.pem
+*.key
+auto.cnf
+mysql.sock
+*.index
+ibtmp*
+
+# Docker 临时文件
 *.dockerignore
 .docker/
 docker-compose.override.yml
 
-# 过滤日志/临时文件
-logs/
-*.log
+# 编辑器临时文件
 *.swp
 *.swo
-scripts/*.sh~
+*~
+.DS_Store
 
-# 过滤敏感证书文件
-*.pem
-*.key
+# 日志文件
+logs/
+*.log
