@@ -6,9 +6,10 @@
 
 ## 2. 目录结构
 docker-task7/
-├── src/db/my.cnf # MySQL 自定义配置
+├── src/db/my.conf # MySQL 自定义配置
 ├── volumes/mysql/ # 数据持久化目录
 ├── docker-compose.yml # 编排配置
+├── seed.sql
 └── docs/db.md # 说明文档
 
 ## 3. 核心配置说明
@@ -18,8 +19,8 @@ docker-task7/
 
 ### 3.2 健康检查
 - 检查命令：`mysqladmin ping` 验证数据库存活；
-- 检查间隔：10s，超时时间：5s，重试3次，启动延迟30s；
-- 优化点：调整超时时间从默认10s改为5s，提升检查效率。
+- 检查间隔：5s，超时时间：10s，重试5次，启动延迟30s；
+- 优化点：调整超时时间从默认5s改为10s，防止检查失误。
 
 ## 4. 验证步骤
 1. 启动容器：`docker compose up -d mysql-db`；
