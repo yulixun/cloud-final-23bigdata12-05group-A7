@@ -1,0 +1,28 @@
+body { font-family: system-ui, Arial, sans-serif; background:#f5f7fb; margin:0; padding:40px; }
+.card { max-width:860px; margin:0 auto; background:#fff; border-radius:14px; padding:26px; box-shadow:0 10px 24px rgba(0,0,0,.08); }
+
+h1 { margin:0 0 10px; }
+.sub { margin:0 0 18px; color:#555; }
+
+.row { display:flex; gap:12px; margin:12px 0 18px; flex-wrap:wrap; }
+button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#2d6cdf; color:#fff; }
+button:hover { opacity:.92; }
+.btnGhost { background:#e9eefc; color:#1f2a44; }
+
+.panel { background:#f8fafc; border:1px solid #e6edf7; border-radius:12px; padding:14px; margin:14px 0; }
+.panelHead { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.panelTitle { font-weight:700; margin-bottom:6px; }
+.panelSub { color:#666; font-size:13px; }
+.hidden { display:none; }
+
+pre { background:#0b1220; color:#dce7ff; padding:16px; border-radius:12px; overflow:auto; min-height:160px; }
+
+.tableWrap { overflow:auto; border-radius:10px; border:1px solid #e6edf7; background:#fff; }
+table { width:100%; border-collapse:collapse; min-width:560px; }
+th, td { padding:10px 12px; border-bottom:1px solid #eef2f9; text-align:left; font-size:14px; }
+th { background:#f2f6ff; position:sticky; top:0; z-index:1; }
+tr:hover td { background:#fbfdff; }
+.muted { color:#666; }
+
+.hint { color:#666; margin-top:14px; }
+code { background:#eef2ff; padding:2px 6px; border-radius:6px; }
