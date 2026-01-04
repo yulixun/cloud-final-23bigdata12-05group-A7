@@ -1,0 +1,75 @@
+
+# 全局网络（与角色1-3的网络配置对齐）
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  # 整合角色1的数据库服务（来自docker-compose-db.yml）
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-task7
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456  # 角色1配置的密码
+      - MYSQL_DATABASE=task7_db
+      - MYSQL_USER=task7_user
+      - MYSQL_PASSWORD=123456
+    ports:
+      - "3306:3306"
+    volumes:
+      - ~/docker-task7/volumes/mysql:/var/lib/mysql
+      - ./db/conf:/etc/mysql/conf.d
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+
+  # 整合角色2的后端服务（来自docker-compose-backend.yml）
+  backend:
+    build: ./backend
+    container_name: backend-task7
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - DB_USER=task7_user
+      - DB_PWD=123456
+      - DB_NAME=task7_db
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    volumes:
+      - ~/docker-task7/logs/backend:/app/logs
+      - ./backend:/app
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]  # 检测Flask服务是否可访问
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 整合角色3的前端服务（来自src/compose-frontend.yml）
+  frontend:
+    build: ./frontend
+    container_name: frontend-task7
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
