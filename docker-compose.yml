@@ -16,11 +16,13 @@ services:
       - MYSQL_USER=task7_user
       - MYSQL_PASSWORD=123456
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
-      - ~/docker-task7/volumes/mysql:/var/lib/mysql
-      - ./db/conf:/etc/mysql/conf.d
-      - ./db/init:/docker-entrypoint-initdb.d
+      # 关键修改：废案目录 ~/docker-task7/volumes/mysql 替换为 src 下的路径
+      - ./src/volumes/mysql:/var/lib/mysql
+      # 改为 ./src/db/conf）
+      - ./src/db/conf:/etc/mysql/conf.d  # 调整后
+      - ./src/db/init:/docker-entrypoint-initdb.d  # 调整后
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
       interval: 10s
@@ -30,8 +32,9 @@ services:
       - app-network
 
   # 整合角色2的后端服务（来自docker-compose-backend.yml）
+  # 2. 后端服务
   backend:
-    build: ./backend
+    build: ./src/backend
     container_name: backend-task7
     restart: always
     ports:
@@ -46,19 +49,18 @@ services:
       mysql-db:
         condition: service_healthy
     volumes:
-      - ~/docker-task7/logs/backend:/app/logs
-      - ./backend:/app
+      - ./src/logs/backend:/app/logs
+      - ./src/backend:/app
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/')"]  # 检测Flask服务是否可访问
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('127.0.0.1',5000)); s.close()"]
       interval: 10s
-      timeout: 5s
-      retries: 3
-
+      timeout: 10s
+      retries: 5
   # 整合角色3的前端服务（来自src/compose-frontend.yml）
   frontend:
-    build: ./frontend
+    build: ./src/frontend
     container_name: frontend-task7
     restart: always
     ports:
