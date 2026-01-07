@@ -4,43 +4,63 @@ import os
 
 app = Flask(__name__)
 
-# MySQL配置（适配pymysql 1.1.0，移除无效参数）
-MYSQL_CONFIG = {
-    "host": os.getenv("MYSQL_HOST", "mysql-db"),
-    "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", "123456"),
-    "database": os.getenv("MYSQL_DB", "test"),
-    "port": 3306,
-    "charset": "utf8mb4",
-    "ssl_disabled": True  # 仅保留ssl_disabled，兼容低版本
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "mysql-db"),
+    "user": os.getenv("DB_USER", "task7_user"),
+    "password": os.getenv("DB_PWD", "123456"),
+    "database": os.getenv("DB_NAME", "task7_db"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "charset": "utf8mb4"
 }
 
-@app.route('/')
-def index():
+# 封装数据库操作函数
+def query_db(sql, params=None):
+    conn = None
+    cursor = None
     try:
-        conn = pymysql.connect(**MYSQL_CONFIG)
+        conn = pymysql.connect(**DB_CONFIG)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS t1 (id INT);")
-        cursor.execute("SELECT * FROM t1;")
-        data = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        success_msg = "连接MySQL成功（Windows WSL2环境）"
-        print(success_msg)
-        return jsonify({
-            "code": 200,
-            "msg": success_msg,
-            "data": data
-        })
+        cursor.execute(sql, params or ())
+
+        if sql.strip().upper().startswith("SELECT"):
+            return cursor.fetchall()
+        else:
+            conn.commit()
+            return cursor.rowcount
     except Exception as e:
-        error_msg = f"连接MySQL失败：{str(e)}"
-        print(error_msg)
-        return jsonify({
-            "code": 500,
-            "msg": error_msg,
-            "data": []
-        })
+        if conn:
+            conn.rollback()
+        print(f"数据库错误：{e}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+# 核心修改1：去掉/api前缀，改成/db
+@app.route('/api/db', methods=['GET'])
+def get_db_data():
+    # 确保表存在
+    # query_db("CREATE TABLE IF NOT EXISTS t1 (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50), value INT)")
+    # 插入测试数据（避免空表）
+    # query_db("INSERT IGNORE INTO t1 (name, value) VALUES (%s, %s), (%s, %s)", ("测试1", 100, "测试2", 200))
+    # 查询所有数据
+    data = query_db("SELECT * FROM demo_enrollments")
+
+    if data is not None:
+        return jsonify({"data": data})  # 前端extractRows能识别data字段
+    else:
+        return jsonify({"code": 500, "msg": "查询失败", "data": []}), 500
+
+# 核心修改2：去掉/api前缀，改成/health
+@app.route('/api/health', methods=['GET'])
+def health():
+    if query_db("SELECT 1") is not None:
+        return jsonify({"status": "ok", "msg": "数据库连接正常"})
+    else:
+        return jsonify({"status": "error", "msg": "数据库连接失败"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
