@@ -20,8 +20,8 @@
 | 变量名          | 含义                  | 示例值       |
 |-----------------|-----------------------|--------------|
 | MYSQL_ROOT_PWD  | MySQL根用户密码       | 123456       |
-| MYSQL_DB        | 项目默认数据库名称    | app_db       |
-| MYSQL_USER      | 项目专用数据库用户    | app_user     |
+| MYSQL_DB        | 项目默认数据库名称    | tasl7_db       |
+| MYSQL_USER      | 项目专用数据库用户    | task7_user     |
 | MYSQL_USER_PWD  | 项目数据库用户密码    | app123456    |
 | BACKEND_PORT    | 后端服务端口          | 5000         |
 | FRONTEND_PORT   | 前端服务端口          | 80           |
