@@ -1,48 +1,67 @@
 from flask import Flask, jsonify
 import pymysql
-import os  # 确保已导入os
+import os
 
 app = Flask(__name__)
 
-# 修正：对齐docker-compose.yml的环境变量
-MYSQL_CONFIG = {
-    "host": os.getenv("DB_HOST", "mysql-db"),  # 对应docker-compose的DB_HOST
-    "user": os.getenv("DB_USER", "task7_user"),  # 对应DB_USER（原root改为task7_user）
-    "password": os.getenv("DB_PWD", "123456"),  # 对应DB_PWD
-    "database": os.getenv("DB_NAME", "task7_db"),  # 对应DB_NAME
-    "port": int(os.getenv("DB_PORT", 3306)),  # 对应DB_PORT（转成int类型）
-    "charset": "utf8mb4",
-    "ssl_disabled": True
+# 从环境变量读取配置（适配Docker）
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "mysql-db"),
+    "user": os.getenv("DB_USER", "task7_user"),
+    "password": os.getenv("DB_PWD", "123456"),
+    "database": os.getenv("DB_NAME", "task7_db"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "charset": "utf8mb4"
 }
 
-# 新增：添加/api开头的查询接口（匹配Nginx代理的/api路径）
-@app.route('/api/query_db', methods=['GET'])
-def query_db():
+# 封装数据库操作函数
+def query_db(sql, params=None):
+    conn = None
+    cursor = None
     try:
-        conn = pymysql.connect(**MYSQL_CONFIG)
+        conn = pymysql.connect(**DB_CONFIG)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor = conn.cursor()
-        # 确保表存在+查询数据
-        cursor.execute("CREATE TABLE IF NOT EXISTS t1 (id INT);")
-        cursor.execute("SELECT * FROM t1;")
-        data = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({
-            "code": 200,
-            "msg": "查询成功",
-            "data": data
-        })
-    except Exception as e:
-        return jsonify({
-            "code": 500,
-            "msg": f"数据库操作失败: {str(e)}",
-            "data": []
-        })
+        cursor.execute(sql, params or ())
 
-# 保留原根路径接口（可选）
-@app.route('/')
-def index():
-    return jsonify({"code": 200, "msg": "后端服务正常运行"})
+        if sql.strip().upper().startswith("SELECT"):
+            return cursor.fetchall()
+        else:
+            conn.commit()
+            return cursor.rowcount
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"数据库错误：{e}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+# 核心修改1：去掉/api前缀，改成/db
+@app.route('/api/db', methods=['GET'])
+def get_db_data():
+    # 确保表存在
+    # query_db("CREATE TABLE IF NOT EXISTS t1 (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50), value INT)")
+    # 插入测试数据（避免空表）
+    # query_db("INSERT IGNORE INTO t1 (name, value) VALUES (%s, %s), (%s, %s)", ("测试1", 100, "测试2", 200))
+    # 查询所有数据
+    data = query_db("SELECT * FROM demo_enrollments")
+
+    if data is not None:
+        return jsonify({"data": data})  # 前端extractRows能识别data字段
+    else:
+        return jsonify({"code": 500, "msg": "查询失败", "data": []}), 500
+
+# 核心修改2：去掉/api前缀，改成/health
+@app.route('/api/health', methods=['GET'])
+def health():
+    if query_db("SELECT 1") is not None:
+        return jsonify({"status": "ok", "msg": "数据库连接正常"})
+    else:
+        return jsonify({"status": "error", "msg": "数据库连接失败"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
